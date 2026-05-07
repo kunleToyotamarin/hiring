@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toyota Marin — Score Written Answers</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f4f5f7;color:#1a1a2e;font-size:14px;}
+.header{background:#1a1a2e;color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.header h1{font-size:16px;font-weight:700;}
+.header p{font-size:12px;color:#9ca3af;margin-top:2px;}
+.main{max-width:760px;margin:24px auto;padding:0 20px 60px;}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:22px 24px;margin-bottom:16px;}
+.card-title{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:4px;}
+.card-sub{font-size:12px;color:#6b7280;margin-bottom:16px;line-height:1.6;}
+.manager-badge{display:inline-block;background:#fef2f2;color:#cc0000;font-size:12px;font-weight:700;padding:4px 12px;border-radius:6px;margin-bottom:16px;}
+.answer-box{background:#f8f9fa;border-radius:8px;padding:14px 16px;font-size:13px;color:#374151;line-height:1.7;font-style:italic;margin-bottom:14px;border-left:3px solid #e5e7eb;}
+.rubric{margin-bottom:14px;}
+.rubric-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#6b7280;margin-bottom:8px;}
+.rubric-row{display:flex;gap:10px;align-items:flex-start;font-size:12px;color:#374151;margin-bottom:5px;line-height:1.5;}
+.rubric-score{font-weight:700;min-width:16px;color:#cc0000;}
+.score-select{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.score-btn{width:48px;height:48px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;font-size:16px;font-weight:700;cursor:pointer;color:#374151;transition:all 0.12s;}
+.score-btn:hover{border-color:#cc0000;background:#fef2f2;color:#cc0000;}
+.score-btn.selected{background:#cc0000;border-color:#cc0000;color:#fff;}
+.score-label{font-size:11px;color:#9ca3af;margin-top:6px;}
+.divider{border:none;border-top:1px solid #f0f0f0;margin:18px 0;}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:13px;}
+.summary-row:last-child{border-bottom:none;}
+.summary-label{color:#374151;}
+.summary-val{font-weight:700;color:#1a1a2e;}
+.btn-submit{background:#cc0000;color:#fff;border:none;padding:13px 36px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:8px;}
+.btn-submit:hover{background:#aa0000;}
+.btn-submit:disabled{background:#9ca3af;cursor:not-allowed;}
+.success-box{background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:28px;text-align:center;display:none;}
+.success-box h2{font-size:18px;font-weight:700;color:#166534;margin-bottom:8px;}
+.success-box p{font-size:13px;color:#166534;line-height:1.7;}
+.q-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#cc0000;margin-bottom:6px;}
+.q-text-display{font-size:13px;font-weight:600;color:#1a1a2e;margin-bottom:10px;line-height:1.5;}
+.not-found{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:40px;text-align:center;color:#6b7280;font-size:14px;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>Toyota Marin — Score Written Answers</h1>
+    <p id="header-sub">Manager scoring page</p>
+  </div>
+  <div id="manager-badge-header" class="manager-badge" style="margin-bottom:0;"></div>
+</div>
+<div class="main" id="main-content">
+  <div class="not-found" id="loading-msg">Loading candidate data...</div>
+</div>
+
+<script>
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwNYZyfhKq_l4iQ4mfAykr0V5IqPT6jajmML8GKiOrP3916N9clKbVRLEVYvmnQpjMP/exec';
+
+const VALID_MANAGERS = ['kunle','joel','brandon','omar'];
+
+const openQuestions = [
+  {id:3,  label:'Q4 — Money drive',
+    text:'What does money mean to you personally — beyond just paying bills?',
+    rubric:[
+      {score:4, desc:'Specific, personal, emotionally honest — reveals real drive. References a life experience, a goal, or something they are working toward.'},
+      {score:3, desc:'Clear motivation with some specificity. More than generic but stops short of revealing true drive.'},
+      {score:2, desc:'Generic but honest — "I want financial freedom" or similar. Not empty but not specific.'},
+      {score:1, desc:'Vague or rehearsed — sounds like they are telling you what you want to hear.'},
+      {score:0, desc:'Deflects, gives a non-answer, or seems uncomfortable with the question.'}
+    ]},
+  {id:8,  label:'Q9 — Selling something not the cheapest',
+    text:'Describe a time you had to sell something that was NOT the cheapest option. How did you justify the price?',
+    rubric:[
+      {score:4, desc:'Specific real story — names the product or situation, explains exactly what they said, outcome is clear. Past tense throughout.'},
+      {score:3, desc:'Good story but thin on what they actually said or how the customer responded.'},
+      {score:2, desc:'General answer — no real story, just a statement about approach. No specific example.'},
+      {score:1, desc:'Conditional language — "I would probably..." — they have never actually done this.'},
+      {score:0, desc:'Cannot give an example, gives a non-sales example, or answer is too short to evaluate.'}
+    ]},
+  {id:16, label:'Q17 — Disagreement with a manager',
+    text:'Describe a time a manager told you something you disagreed with. What did you do?',
+    rubric:[
+      {score:4, desc:'Honest disagreement shown, respectful pushback described, followed through anyway or found constructive resolution. Shows maturity.'},
+      {score:3, desc:'Good story, outcome is unclear or they did not fully follow through.'},
+      {score:2, desc:'Downplays the disagreement or says they just agreed. No real conflict shown.'},
+      {score:1, desc:'Cannot think of a real example or gives a trivial one.'},
+      {score:0, desc:'Story reveals defensiveness, held a grudge, ignored the feedback, or behaved poorly.'}
+    ]},
+  {id:20, label:'Q21 — Why Toyota Marin specifically',
+    text:'Why do you want to work in sales at Toyota Marin specifically — not just any dealership?',
+    rubric:[
+      {score:4, desc:'Shows they researched the store, understands A2Z, references specific things about the dealership, culture, or model. Feels genuine.'},
+      {score:3, desc:'Shows genuine interest and some specificity — not just any dealership, but thin on detail.'},
+      {score:2, desc:'Generic answer that could apply to any Toyota store or any dealership.'},
+      {score:1, desc:'Vague enthusiasm — "I have always loved Toyota" with nothing specific.'},
+      {score:0, desc:'No specificity whatsoever or clearly does not know what Toyota Marin is.'}
+    ]},
+  {id:23, label:'Q24 — Work history last 5 years',
+    text:'List every job held in the last 5 years — role, tenure, reason for leaving.',
+    rubric:[
+      {score:4, desc:'Clear timeline, honest reasons for leaving, no unexplained gaps, shows progressive growth or at least stable tenure.'},
+      {score:3, desc:'Clear but some vagueness on reasons for leaving one or more roles.'},
+      {score:2, desc:'Gaps present, reasons feel rehearsed, or only partial history given.'},
+      {score:1, desc:'Short tenure pattern (multiple jobs under 6 months) without credible explanation.'},
+      {score:0, desc:'Refuses to detail, major unexplained gaps, or multiple terminations implied.'}
+    ]}
+];
+
+const params = new URLSearchParams(window.location.search);
+const managerParam = (params.get('manager')||'').toLowerCase();
+const candidateName = decodeURIComponent(params.get('name')||'Unknown Candidate');
+const candidateId = params.get('cid')||'';
+
+const scores = {};
+
+function init(){
+  if(!VALID_MANAGERS.includes(managerParam)){
+    document.getElementById('main-content').innerHTML='<div class="not-found"><strong>Invalid link.</strong><br>Please use the link from your assessment email.</div>';
+    return;
+  }
+  const managerName = managerParam.charAt(0).toUpperCase()+managerParam.slice(1);
+  document.getElementById('header-sub').textContent = 'Scoring: '+candidateName;
+  document.getElementById('manager-badge-header').textContent = managerName;
+
+  let html='';
+
+  html+='<div class="card"><div class="card-title">'+candidateName+'</div>';
+  html+='<div class="card-sub">Score each written answer using the rubric provided. Your scores are private until you submit — you will not see other managers\' scores until after you have submitted your own.</div>';
+  html+='<div style="display:inline-block;background:#fef2f2;color:#cc0000;font-size:12px;font-weight:700;padding:4px 12px;border-radius:6px;">Scoring as: '+managerName+'</div></div>';
+
+  openQuestions.forEach((q,qi)=>{
+    const storedAnswer = getStoredAnswer(q.id);
+    html+='<div class="card">';
+    html+='<div class="q-label">'+q.label+'</div>';
+    html+='<div class="q-text-display">'+q.text+'</div>';
+    html+='<div class="answer-box">'+(storedAnswer||'<em style="color:#9ca3af;">Answer will load when connected to Google Sheet</em>')+'</div>';
+    html+='<div class="rubric"><div class="rubric-title">Scoring rubric</div>';
+    q.rubric.forEach(r=>{
+      html+='<div class="rubric-row"><span class="rubric-score">'+r.score+'</span><span>'+r.desc+'</span></div>';
+    });
+    html+='</div>';
+    html+='<div class="rubric-title">Your score for this answer</div>';
+    html+='<div class="score-select">';
+    [0,1,2,3,4].forEach(s=>{
+      html+='<button class="score-btn" id="sbtn-'+q.id+'-'+s+'" onclick="setScore('+q.id+','+s+')">'+s+'</button>';
+    });
+    html+='</div>';
+    html+='<div class="score-label" id="slabel-'+q.id+'">Select a score</div>';
+    if(qi<openQuestions.length-1)html+='<hr class="divider">';
+    html+='</div>';
+  });
+
+  html+='<div class="card" id="summary-card">';
+  html+='<div class="card-title">Summary</div>';
+  html+='<div class="card-sub">Your written answer scores. Submit when all 5 are scored.</div>';
+  openQuestions.forEach(q=>{
+    html+='<div class="summary-row"><div class="summary-label">'+q.label+'</div><div class="summary-val" id="sum-'+q.id+'">—</div></div>';
+  });
+  html+='<div class="summary-row" style="border-top:2px solid #e5e7eb;margin-top:4px;padding-top:14px;"><div class="summary-label" style="font-weight:700;font-size:14px;">Written answers total</div><div class="summary-val" style="font-size:20px;color:#cc0000;" id="sum-total">— / 20</div></div>';
+  html+='<button class="btn-submit" id="btn-submit" onclick="submitScores()" disabled>Submit my scores</button>';
+  html+='</div>';
+
+  html+='<div class="success-box" id="success-box"><h2>Scores submitted</h2><p>Your written answer scores for <strong>'+candidateName+'</strong> have been recorded.<br>You can now view the combined results including all manager scores.</p><br><a href="ToyotaMarin_Results.html" style="color:#cc0000;font-weight:700;font-size:14px;">Open hiring dashboard</a></div>';
+
+  document.getElementById('main-content').innerHTML=html;
+}
+
+function getStoredAnswer(qid){
+  const stored = sessionStorage.getItem('tm_answers_'+candidateId);
+  if(!stored)return null;
+  try{
+    const parsed=JSON.parse(stored);
+    return parsed['q'+qid]||null;
+  }catch(e){return null;}
+}
+
+function setScore(qid,score){
+  scores[qid]=score;
+  openQuestions.forEach(q=>{
+    [0,1,2,3,4].forEach(s=>{
+      const btn=document.getElementById('sbtn-'+q.id+'-'+s);
+      if(btn)btn.classList.remove('selected');
+    });
+  });
+  [0,1,2,3,4].forEach(s=>{
+    const btn=document.getElementById('sbtn-'+qid+'-'+s);
+    if(btn)btn.classList.toggle('selected',s===score);
+  });
+  const lbl=document.getElementById('slabel-'+qid);
+  if(lbl){
+    const rubricItem=openQuestions.find(q=>q.id===qid).rubric.find(r=>r.score===score);
+    lbl.textContent=score+'/4 — '+rubricItem.desc.substring(0,60)+'...';
+    lbl.style.color='#374151';
+  }
+  const sumEl=document.getElementById('sum-'+qid);
+  if(sumEl)sumEl.textContent=score+'/4';
+  updateTotal();
+}
+
+function updateTotal(){
+  const allScored=openQuestions.every(q=>scores[q.id]!==undefined);
+  const total=Object.values(scores).reduce((a,b)=>a+b,0);
+  const totalEl=document.getElementById('sum-total');
+  if(totalEl)totalEl.textContent=(allScored?total:'—')+' / 20';
+  const btn=document.getElementById('btn-submit');
+  if(btn)btn.disabled=!allScored;
+}
+
+function submitScores(){
+  const btn=document.getElementById('btn-submit');
+  btn.disabled=true;
+  btn.textContent='Submitting...';
+  const payload={
+    type:'manager_score',
+    manager:managerParam,
+    candidateId,
+    candidateName,
+    scores,
+    total:Object.values(scores).reduce((a,b)=>a+b,0),
+    timestamp:new Date().toISOString()
+  };
+  if(false){
+    document.getElementById('summary-card').style.display='none';
+    document.getElementById('success-box').style.display='block';
+    return;
+  }
+  fetch(GOOGLE_SCRIPT_URL,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  }).then(()=>{
+    document.getElementById('summary-card').style.display='none';
+    document.getElementById('success-box').style.display='block';
+  }).catch(()=>{
+    btn.disabled=false;
+    btn.textContent='Submit failed — try again';
+  });
+}
+
+init();
+</script>
+</body>
+</html>
