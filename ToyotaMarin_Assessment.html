@@ -421,7 +421,8 @@ function sendEmails(data,candidateId){
   function sendOne(index){
     if(index>=MANAGERS.length)return;
     const mgr=MANAGERS[index];
-    const scoreLink=SCORE_PAGE_URL+'?manager='+mgr.name.toLowerCase()+(candidateId?'&cid='+candidateId:'')+'&name='+encodeURIComponent(data.candidateName);
+    const ansEncoded = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data.openAnswers||{})))));
+    const scoreLink=SCORE_PAGE_URL+'?manager='+mgr.name.toLowerCase()+(candidateId?'&cid='+candidateId:'')+'&name='+encodeURIComponent(data.candidateName)+'&ans='+ansEncoded;
     emailjs.send(EMAILJS_SERVICE_ID,EMAILJS_TEMPLATE_ID,{
       to_email:mgr.email,
       to_name:mgr.name,

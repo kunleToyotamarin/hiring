@@ -165,25 +165,40 @@ function init(){
   loadCandidateAnswers();
 }
 
-async function loadCandidateAnswers(){
-  if(!candidateId || GOOGLE_SCRIPT_URL.includes('YOUR_GOOGLE_SCRIPT_URL'))return;
-  try{
-    const res = await fetch(GOOGLE_SCRIPT_URL+'?action=getCandidate&cid='+encodeURIComponent(candidateId), {
-      method: 'GET',
-      redirect: 'follow'
-    });
-    const text = await res.text();
-    let data;
+function loadCandidateAnswers(){
+  // Read answers from URL parameter (most reliable approach)
+  const ansParam = params.get('ans');
+  if(ansParam){
     try {
-      data = JSON.parse(text);
-    } catch(parseErr) {
-      console.error('Could not parse response as JSON:', text);
+      const decoded = decodeURIComponent(escape(atob(decodeURIComponent(ansParam))));
+      const answers = JSON.parse(decoded);
       openQuestions.forEach(q=>{
+        const ans = answers['q'+q.id];
         const box = document.getElementById('answer-'+q.id);
-        if(box) box.innerHTML = '<em style="color:#cc0000;">Could not load answer. Check the dashboard for written answers.</em>';
+        if(box){
+          box.innerHTML = ans ? String(ans).replace(/\n/g,'<br>') : '<em style="color:#9ca3af;">No answer provided</em>';
+        }
       });
       return;
+    } catch(e) {
+      console.error('Could not decode answers from URL:', e);
     }
+  }
+  // Fallback: try fetching from Apps Script
+  fetchAnswersFromScript();
+}
+
+async function fetchAnswersFromScript(){
+  if(!candidateId || GOOGLE_SCRIPT_URL.includes('YOUR_GOOGLE_SCRIPT_URL')){
+    openQuestions.forEach(q=>{
+      const box = document.getElementById('answer-'+q.id);
+      if(box) box.innerHTML = '<em style="color:#9ca3af;">Please reference the dashboard or original email for the candidate answers.</em>';
+    });
+    return;
+  }
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL+'?action=getCandidate&cid='+encodeURIComponent(candidateId));
+    const data = await res.json();
     if(data && data.openAnswers){
       openQuestions.forEach(q=>{
         const ans = data.openAnswers['q'+q.id];
@@ -192,17 +207,11 @@ async function loadCandidateAnswers(){
           box.innerHTML = ans ? String(ans).replace(/\n/g,'<br>') : '<em style="color:#9ca3af;">No answer provided</em>';
         }
       });
-    } else {
-      openQuestions.forEach(q=>{
-        const box = document.getElementById('answer-'+q.id);
-        if(box) box.innerHTML = '<em style="color:#9ca3af;">No answer data available</em>';
-      });
     }
   }catch(e){
-    console.error('Failed to load candidate answers:', e);
     openQuestions.forEach(q=>{
       const box = document.getElementById('answer-'+q.id);
-      if(box) box.innerHTML = '<em style="color:#cc0000;">Error loading answer. Check the dashboard.</em>';
+      if(box) box.innerHTML = '<em style="color:#9ca3af;">Please reference the dashboard for candidate written answers.</em>';
     });
   }
 }
