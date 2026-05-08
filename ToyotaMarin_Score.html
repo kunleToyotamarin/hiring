@@ -168,19 +168,42 @@ function init(){
 async function loadCandidateAnswers(){
   if(!candidateId || GOOGLE_SCRIPT_URL.includes('YOUR_GOOGLE_SCRIPT_URL'))return;
   try{
-    const res = await fetch(GOOGLE_SCRIPT_URL+'?action=getCandidate&cid='+encodeURIComponent(candidateId));
-    const data = await res.json();
+    const res = await fetch(GOOGLE_SCRIPT_URL+'?action=getCandidate&cid='+encodeURIComponent(candidateId), {
+      method: 'GET',
+      redirect: 'follow'
+    });
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch(parseErr) {
+      console.error('Could not parse response as JSON:', text);
+      openQuestions.forEach(q=>{
+        const box = document.getElementById('answer-'+q.id);
+        if(box) box.innerHTML = '<em style="color:#cc0000;">Could not load answer. Check the dashboard for written answers.</em>';
+      });
+      return;
+    }
     if(data && data.openAnswers){
       openQuestions.forEach(q=>{
         const ans = data.openAnswers['q'+q.id];
         const box = document.getElementById('answer-'+q.id);
         if(box){
-          box.innerHTML = ans ? ans.replace(/\n/g,'<br>') : '<em style="color:#9ca3af;">No answer provided</em>';
+          box.innerHTML = ans ? String(ans).replace(/\n/g,'<br>') : '<em style="color:#9ca3af;">No answer provided</em>';
         }
+      });
+    } else {
+      openQuestions.forEach(q=>{
+        const box = document.getElementById('answer-'+q.id);
+        if(box) box.innerHTML = '<em style="color:#9ca3af;">No answer data available</em>';
       });
     }
   }catch(e){
     console.error('Failed to load candidate answers:', e);
+    openQuestions.forEach(q=>{
+      const box = document.getElementById('answer-'+q.id);
+      if(box) box.innerHTML = '<em style="color:#cc0000;">Error loading answer. Check the dashboard.</em>';
+    });
   }
 }
 
