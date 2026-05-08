@@ -113,12 +113,25 @@ const candidateId = params.get('cid')||'';
 
 const scores = {};
 
-function init(){
+async function init(){
   if(!VALID_MANAGERS.includes(managerParam)){
     document.getElementById('main-content').innerHTML='<div class="not-found"><strong>Invalid link.</strong><br>Please use the link from your assessment email.</div>';
     return;
   }
   const managerName = managerParam.charAt(0).toUpperCase()+managerParam.slice(1);
+
+  // Check if this manager already scored this candidate
+  let alreadyScored = null;
+  if(candidateId && !GOOGLE_SCRIPT_URL.includes('YOUR_GOOGLE_SCRIPT_URL')){
+    try {
+      const checkRes = await fetch(GOOGLE_SCRIPT_URL+'?action=checkScore&cid='+encodeURIComponent(candidateId)+'&manager='+encodeURIComponent(managerParam));
+      const checkData = await checkRes.json();
+      if(checkData && checkData.exists){
+        alreadyScored = checkData;
+      }
+    } catch(e) { console.error('Check failed:', e); }
+  }
+
   document.getElementById('header-sub').textContent = 'Scoring: '+candidateName;
   document.getElementById('manager-badge-header').textContent = managerName;
 
@@ -138,26 +151,51 @@ function init(){
       html+='<div class="rubric-row"><span class="rubric-score">'+r.score+'</span><span>'+r.desc+'</span></div>';
     });
     html+='</div>';
-    html+='<div class="rubric-title">Your score for this answer</div>';
-    html+='<div class="score-select">';
-    [0,1,2,3,4].forEach(s=>{
-      html+='<button class="score-btn" id="sbtn-'+q.id+'-'+s+'" onclick="setScore('+q.id+','+s+')">'+s+'</button>';
-    });
-    html+='</div>';
-    html+='<div class="score-label" id="slabel-'+q.id+'">Select a score</div>';
+    if(alreadyScored){
+      const prevScore = alreadyScored.scores['q'+q.id];
+      html+='<div class="rubric-title">Your previous score (locked)</div>';
+      html+='<div class="score-select">';
+      [0,1,2,3,4].forEach(s=>{
+        const isSelected = s===prevScore;
+        html+='<button class="score-btn '+(isSelected?'selected':'')+'" disabled style="opacity:'+(isSelected?'1':'0.3')+';cursor:not-allowed;">'+s+'</button>';
+      });
+      html+='</div>';
+      html+='<div class="score-label" style="color:#166534;">Locked: You scored this '+prevScore+'/4</div>';
+    } else {
+      html+='<div class="rubric-title">Your score for this answer</div>';
+      html+='<div class="score-select">';
+      [0,1,2,3,4].forEach(s=>{
+        html+='<button class="score-btn" id="sbtn-'+q.id+'-'+s+'" onclick="setScore('+q.id+','+s+')">'+s+'</button>';
+      });
+      html+='</div>';
+      html+='<div class="score-label" id="slabel-'+q.id+'">Select a score</div>';
+    }
     if(qi<openQuestions.length-1)html+='<hr class="divider">';
     html+='</div>';
   });
 
-  html+='<div class="card" id="summary-card">';
-  html+='<div class="card-title">Summary</div>';
-  html+='<div class="card-sub">Your written answer scores. Submit when all 5 are scored.</div>';
-  openQuestions.forEach(q=>{
-    html+='<div class="summary-row"><div class="summary-label">'+q.label+'</div><div class="summary-val" id="sum-'+q.id+'">—</div></div>';
-  });
-  html+='<div class="summary-row" style="border-top:2px solid #e5e7eb;margin-top:4px;padding-top:14px;"><div class="summary-label" style="font-weight:700;font-size:14px;">Written answers total</div><div class="summary-val" style="font-size:20px;color:#cc0000;" id="sum-total">— / 20</div></div>';
-  html+='<button class="btn-submit" id="btn-submit" onclick="submitScores()" disabled>Submit my scores</button>';
-  html+='</div>';
+  if(alreadyScored){
+    html+='<div class="card" style="background:#f0fdf4;border:1px solid #86efac;">';
+    html+='<div class="card-title" style="color:#166534;">Already scored</div>';
+    html+='<div class="card-sub" style="color:#166534;">You submitted scores for this candidate on '+new Date(alreadyScored.timestamp).toLocaleString()+'. Scoring is locked to prevent duplicates.</div>';
+    openQuestions.forEach(q=>{
+      const sc = alreadyScored.scores['q'+q.id];
+      html+='<div class="summary-row"><div class="summary-label">'+q.label+'</div><div class="summary-val" style="color:#166534;">'+sc+'/4</div></div>';
+    });
+    html+='<div class="summary-row" style="border-top:2px solid #86efac;margin-top:4px;padding-top:14px;"><div class="summary-label" style="font-weight:700;font-size:14px;">Written answers total</div><div class="summary-val" style="font-size:20px;color:#166534;">'+alreadyScored.total+' / 20</div></div>';
+    html+='<a href="ToyotaMarin_Results.html" style="display:inline-block;margin-top:14px;background:#cc0000;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:13px;">Open hiring dashboard</a>';
+    html+='</div>';
+  } else {
+    html+='<div class="card" id="summary-card">';
+    html+='<div class="card-title">Summary</div>';
+    html+='<div class="card-sub">Your written answer scores. Submit when all 5 are scored. Once submitted you cannot change them.</div>';
+    openQuestions.forEach(q=>{
+      html+='<div class="summary-row"><div class="summary-label">'+q.label+'</div><div class="summary-val" id="sum-'+q.id+'">—</div></div>';
+    });
+    html+='<div class="summary-row" style="border-top:2px solid #e5e7eb;margin-top:4px;padding-top:14px;"><div class="summary-label" style="font-weight:700;font-size:14px;">Written answers total</div><div class="summary-val" style="font-size:20px;color:#cc0000;" id="sum-total">— / 20</div></div>';
+    html+='<button class="btn-submit" id="btn-submit" onclick="submitScores()" disabled>Submit my scores</button>';
+    html+='</div>';
+  }
 
   html+='<div class="success-box" id="success-box"><h2>Scores submitted</h2><p>Your written answer scores for <strong>'+candidateName+'</strong> have been recorded.<br>You can now view the combined results including all manager scores.</p><br><a href="ToyotaMarin_Results.html" style="color:#cc0000;font-weight:700;font-size:14px;">Open hiring dashboard</a></div>';
 
