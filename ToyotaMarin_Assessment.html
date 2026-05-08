@@ -246,8 +246,8 @@ const questions = [
 
   {id:22, section:6, type:'mc',   points:4, pressure:true,
     text:'A customer is standing at your desk ready to discuss numbers. They ask: "What would my monthly payment be on a $38,000 vehicle if I put $3,000 down and finance for 60 months?" You do not have a calculator in front of you. What do you do?',
-    options:['Tell them you need to grab a calculator or pull up the system first','Give them a rough estimate — around $620–$650/month — and confirm the exact number shortly','Tell them the payment depends entirely on their credit score so you cannot estimate','Invite them to sit down and go through the full numbers together at a desk','Redirect them to the finance team to run those numbers'],
-    scored:[1,4,0,2,1]},
+    options:['Tell them you need to grab a calculator or pull up the system first','Give them a rough estimate off the top of your head and tell them you will confirm the exact number shortly','Tell them the payment depends entirely on their credit score so you cannot estimate right now','Invite them to sit down with you so you can go through the full numbers together properly','Redirect them to the finance team to run those numbers for them'],
+    scored:[2,1,0,4,0]},
   {id:23, section:6, type:'open', points:0,
     text:'List every job you have held in the last 5 years — include the role, how long you were there, and in one sentence why you left or are looking to leave.',
     placeholder:'Example: "Sales rep at X dealership, 2 years, left because management changed and the culture became difficult." Be specific and honest.', minWords:25}
@@ -391,23 +391,20 @@ function buildData(timeUsed){
 
 function postToSheet(data){
   const status=document.getElementById('sending-status');
-  if(false){
-    status.textContent='Setup required — see instructions document.';
-    sendEmails(data,null);
-    return;
-  }
+  // Generate the candidateId ONCE and include it in BOTH the sheet POST and the email link
+  const candidateId = Date.now().toString(36).toUpperCase();
+  data.candidateId = candidateId;
   fetch(GOOGLE_SCRIPT_URL,{
     method:'POST',
     mode:'no-cors',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify(data)
   }).then(()=>{
-    const candidateId=Date.now().toString(36).toUpperCase();
     status.textContent='Results submitted successfully.';
     sendEmails(data,candidateId);
   }).catch(()=>{
     status.textContent='Submission error — please notify the front desk.';
-    sendEmails(data,null);
+    sendEmails(data,candidateId);
   });
 }
 
