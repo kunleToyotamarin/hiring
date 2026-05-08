@@ -129,11 +129,10 @@ function init(){
   html+='<div style="display:inline-block;background:#fef2f2;color:#cc0000;font-size:12px;font-weight:700;padding:4px 12px;border-radius:6px;">Scoring as: '+managerName+'</div></div>';
 
   openQuestions.forEach((q,qi)=>{
-    const storedAnswer = getStoredAnswer(q.id);
     html+='<div class="card">';
     html+='<div class="q-label">'+q.label+'</div>';
     html+='<div class="q-text-display">'+q.text+'</div>';
-    html+='<div class="answer-box">'+(storedAnswer||'<em style="color:#9ca3af;">Answer will load when connected to Google Sheet</em>')+'</div>';
+    html+='<div class="answer-box" id="answer-'+q.id+'"><em style="color:#9ca3af;">Loading candidate answer...</em></div>';
     html+='<div class="rubric"><div class="rubric-title">Scoring rubric</div>';
     q.rubric.forEach(r=>{
       html+='<div class="rubric-row"><span class="rubric-score">'+r.score+'</span><span>'+r.desc+'</span></div>';
@@ -163,15 +162,26 @@ function init(){
   html+='<div class="success-box" id="success-box"><h2>Scores submitted</h2><p>Your written answer scores for <strong>'+candidateName+'</strong> have been recorded.<br>You can now view the combined results including all manager scores.</p><br><a href="ToyotaMarin_Results.html" style="color:#cc0000;font-weight:700;font-size:14px;">Open hiring dashboard</a></div>';
 
   document.getElementById('main-content').innerHTML=html;
+  loadCandidateAnswers();
 }
 
-function getStoredAnswer(qid){
-  const stored = sessionStorage.getItem('tm_answers_'+candidateId);
-  if(!stored)return null;
+async function loadCandidateAnswers(){
+  if(!candidateId || GOOGLE_SCRIPT_URL.includes('YOUR_GOOGLE_SCRIPT_URL'))return;
   try{
-    const parsed=JSON.parse(stored);
-    return parsed['q'+qid]||null;
-  }catch(e){return null;}
+    const res = await fetch(GOOGLE_SCRIPT_URL+'?action=getCandidate&cid='+encodeURIComponent(candidateId));
+    const data = await res.json();
+    if(data && data.openAnswers){
+      openQuestions.forEach(q=>{
+        const ans = data.openAnswers['q'+q.id];
+        const box = document.getElementById('answer-'+q.id);
+        if(box){
+          box.innerHTML = ans ? ans.replace(/\n/g,'<br>') : '<em style="color:#9ca3af;">No answer provided</em>';
+        }
+      });
+    }
+  }catch(e){
+    console.error('Failed to load candidate answers:', e);
+  }
 }
 
 function setScore(qid,score){
