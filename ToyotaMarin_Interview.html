@@ -79,7 +79,7 @@ input[type=range]{width:100%;accent-color:#cc0000;}
   <button class="btn-logout" onclick="logout()">Log out</button>
 </div>
 
-<div class="main" id="login-section">
+<div id="login-section" class="main">
   <div class="login-wrap">
     <h2>Manager Interview Tool</h2>
     <p>Enter manager password to access interview scoring</p>
@@ -89,7 +89,7 @@ input[type=range]{width:100%;accent-color:#cc0000;}
   </div>
 </div>
 
-<div class="main" id="dashboard" style="display:none;">
+<div id="dashboard-wrapper" class="main" style="display:none;">
 
   <div class="card">
     <div class="card-title">Interview Setup</div>
@@ -259,7 +259,7 @@ function tryLogin(){
   if(pw === PASSWORD){
     document.getElementById('login-section').style.display='none';
     document.getElementById('main-header').style.display='flex';
-    document.getElementById('dashboard').style.display='block';
+    document.getElementById('dashboard-wrapper').style.display='block';
     init();
   } else {
     document.getElementById('pw-error').style.display='block';
@@ -269,7 +269,7 @@ function tryLogin(){
 function logout(){
   document.getElementById('login-section').style.display='block';
   document.getElementById('main-header').style.display='none';
-  document.getElementById('dashboard').style.display='none';
+  document.getElementById('dashboard-wrapper').style.display='none';
   document.getElementById('pw-input').value='';
 }
 
@@ -445,9 +445,12 @@ async function submitInterview(){
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify(payload)
     });
-    document.getElementById('dashboard').style.display='none';
+    // Hide all dashboard cards but keep the wrapper visible
+    const wrapper = document.getElementById('dashboard-wrapper');
+    const cards = wrapper.querySelectorAll('.card');
+    cards.forEach(c => c.style.display = 'none');
     document.getElementById('success-box').style.display='block';
-    document.querySelector('.main:not(#login-section)').appendChild(document.getElementById('success-box'));
+    window.scrollTo(0,0);
   } catch(e) {
     btn.disabled = false;
     btn.textContent = 'Submit failed — try again';
