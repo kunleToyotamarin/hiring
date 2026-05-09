@@ -232,13 +232,24 @@ function renderTable(){
     const mcColor = c.pct>=75?'score-high':c.pct>=55?'score-mid':'score-low';
     const verdictClass = c.verdict==='STRONG'?'verdict-strong':c.verdict==='BORDERLINE'?'verdict-border':'verdict-below';
     const mgrScores = MANAGERS.map(m=>{
-      const ms = c.managerScores && c.managerScores[m.toLowerCase()];
-      return '<span class="manager-score '+(ms!==undefined?'scored':'pending')+'">'+(ms!==undefined?m+': '+ms.total+'/20':m+': pending')+'</span>';
+      let ms = null;
+      if(c.managerScores){
+        // Try multiple key formats since spreadsheet may store differently
+        ms = c.managerScores[m] || c.managerScores[m.toLowerCase()] || c.managerScores[m.toUpperCase()];
+        if(!ms){
+          // Try case-insensitive search
+          const keys = Object.keys(c.managerScores);
+          const matchKey = keys.find(k => String(k).toLowerCase() === m.toLowerCase());
+          if(matchKey) ms = c.managerScores[matchKey];
+        }
+      }
+      return '<span class="manager-score '+(ms?'scored':'pending')+'">'+(ms?m+': '+ms.total+'/20':m+': pending')+'</span>';
     }).join('');
-    const writtenTotal = c.managerScores ? Object.values(c.managerScores).reduce((a,v)=>a+(v.total||0),0) : 0;
-    const writtenCount = c.managerScores ? Object.keys(c.managerScores).length : 0;
+    const validScores = c.managerScores ? Object.values(c.managerScores).filter(v=>v && v.total!==undefined) : [];
+    const writtenTotal = validScores.reduce((a,v)=>a+(parseInt(v.total)||0),0);
+    const writtenCount = validScores.length;
     const writtenAvg = writtenCount>0 ? Math.round(writtenTotal/writtenCount) : null;
-    const combined = writtenAvg!==null ? c.total+'+'+writtenAvg+'avg written' : c.total+' MC only';
+    const combined = writtenAvg!==null ? c.total+' MC + '+writtenAvg+' avg written' : c.total+' MC only';
     return `<tr>
       <td style="font-weight:600;">${c.candidateName}</td>
       <td style="color:#6b7280;">${date}</td>
