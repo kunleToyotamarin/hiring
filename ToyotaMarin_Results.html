@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Toyota Marin Hiring Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Arial,sans-serif;background:#f4f5f7;color:#1a1a2e;font-size:14px;}
@@ -52,6 +54,10 @@ tr:hover td{background:#fafafa;}
 .manager-score.scored{background:#eff6ff;color:#1d4ed8;}
 .manager-score.pending{background:#f9fafb;color:#9ca3af;font-style:italic;}
 .expand-btn{background:none;border:none;color:#cc0000;font-size:11px;cursor:pointer;padding:0;font-weight:600;}
+.download-btn{background:#1a1a2e;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer;margin-left:6px;}
+.download-btn:hover{background:#0d0d1a;}
+.download-options{display:flex;gap:6px;align-items:center;}
+.download-select{padding:4px 8px;font-size:10px;border:1px solid #e5e7eb;border-radius:4px;background:#fff;color:#374151;}
 .detail-row{display:none;}
 .detail-row.open{display:table-row;}
 .detail-cell{background:#f8f9fa;padding:16px 20px;}
@@ -257,7 +263,13 @@ function renderTable(){
       <td>${mgrScores}</td>
       <td style="font-weight:600;">${combined}</td>
       <td><span class="${verdictClass}">${c.verdict}</span></td>
-      <td><button class="expand-btn" onclick="toggleDetail(${i})">Details</button></td>
+      <td>
+        <div class="download-options">
+          <button class="expand-btn" onclick="toggleDetail(${i})">Details</button>
+          <button class="download-btn" onclick="downloadCandidatePDF(${i}, 'summary')">Summary PDF</button>
+          <button class="download-btn" onclick="downloadCandidatePDF(${i}, 'full')" style="background:#cc0000;">Full PDF</button>
+        </div>
+      </td>
     </tr>
     <tr class="detail-row" id="detail-${i}">
       <td colspan="7" class="detail-cell">
@@ -266,10 +278,23 @@ function renderTable(){
             <div class="detail-section">
               <div class="detail-section-title">Section breakdown</div>
               ${(c.secScores||[]).map(s=>{
+                if(s.label === 'Behavioral profile') return '';
                 const sp=s.max>0?Math.round(s.raw/s.max*100):0;
                 const bc=sp>=75?'#16a34a':sp>=50?'#d97706':'#cc0000';
                 return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f0f0;font-size:11px;"><span>'+s.label+'</span><span style="font-weight:700;color:'+bc+'">'+s.raw+'/'+s.max+' ('+sp+'%)</span></div>';
               }).join('')}
+              ${c.behavioralProfile && c.behavioralProfile.length > 0 ? `
+                <div style="margin-top:14px;border-top:1px solid #e5e7eb;padding-top:12px;">
+                  <div class="detail-section-title" style="margin-bottom:8px;">Behavioral profile</div>
+                  ${c.behavioralProfile.map(b=>{
+                    const dimNames = {drive:'Drive / Initiative',persistence:'Persistence',social:'Social orientation',process:'Process orientation',stress:'Stress response'};
+                    const lc = b.lean.startsWith('Strong')&&!b.lean.includes('Reactive')&&!b.lean.includes('Quits')&&!b.lean.includes('Solo')&&!b.lean.includes('Improvises')?'#16a34a':
+                              b.lean.startsWith('Moderate')?'#2563eb':
+                              b.lean.startsWith('Slight')?'#d97706':'#cc0000';
+                    return '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:11px;"><span>'+dimNames[b.dimension]+'</span><span style="font-weight:700;color:'+lc+'">'+b.lean+'</span></div>';
+                  }).join('')}
+                </div>
+              ` : ''}
             </div>
             <div class="detail-section" style="margin-top:14px;">
               <div class="detail-section-title">Suggested interview probes</div>
@@ -281,6 +306,23 @@ function renderTable(){
               <div class="detail-section-title">Written answers</div>
               ${c.openAnswers ? Object.entries(c.openAnswers).map(([k,v])=>'<div class="answer-preview">'+v+'</div>').join('') : '<div style="color:#9ca3af;font-size:11px;">Not available</div>'}
             </div>
+            ${c.interviews && c.interviews.length > 0 ? `
+            <div class="detail-section" style="margin-top:14px;">
+              <div class="detail-section-title">Interview results</div>
+              ${c.interviews.map(iv => `
+                <div style="background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:10px 12px;margin-bottom:8px;">
+                  <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:6px;">
+                    <span>${iv.manager}</span>
+                    <span style="color:${iv.finalVerdict==='HIRE'?'#16a34a':iv.finalVerdict==='MAYBE'?'#d97706':'#cc0000'}">${iv.finalVerdict}</span>
+                  </div>
+                  <div style="font-size:10px;color:#6b7280;line-height:1.6;">
+                    Scorecard: <strong>${iv.scorecardTotal}/100</strong> &nbsp;|&nbsp; 
+                    Roleplay avg: <strong>${iv.roleplayAvg}/4</strong> (${iv.roleplayCount} done)
+                  </div>
+                  ${iv.finalNotes ? '<div style="font-size:11px;font-style:italic;color:#374151;margin-top:6px;line-height:1.5;">"'+iv.finalNotes+'"</div>' : ''}
+                </div>
+              `).join('')}
+            </div>` : ''}
           </div>
         </div>
       </td>
@@ -291,6 +333,265 @@ function renderTable(){
 function toggleDetail(i){
   const row = document.getElementById('detail-'+i);
   row.classList.toggle('open');
+}
+
+function downloadCandidatePDF(index, mode) {
+  const data = document.getElementById('filter-verdict').value === 'all' ? [...allCandidates] : allCandidates.filter(c=>c.verdict===document.getElementById('filter-verdict').value);
+  const sort = document.getElementById('filter-sort').value;
+  if(sort==='date-desc') data.sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp));
+  else if(sort==='date-asc') data.sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+  else if(sort==='score-desc') data.sort((a,b)=>b.pct-a.pct);
+  else data.sort((a,b)=>a.pct-b.pct);
+  
+  const c = data[index];
+  if(!c) return;
+  
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'pt', format:'letter'});
+  const pageWidth = doc.internal.pageSize.width;
+  let y = 50;
+  
+  // ===== HEADER =====
+  doc.setFillColor(26, 26, 46);
+  doc.rect(0, 0, pageWidth, 80, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(18);
+  doc.setFont(undefined, 'bold');
+  doc.text('TOYOTA MARIN — CANDIDATE REPORT', 40, 35);
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'normal');
+  doc.setTextColor(180, 180, 180);
+  doc.text('Generated: ' + new Date().toLocaleString(), 40, 55);
+  doc.text('Confidential — for Sales Director / GM review', pageWidth - 40, 55, {align: 'right'});
+  y = 110;
+  
+  // ===== CANDIDATE NAME & VERDICT =====
+  doc.setTextColor(26, 26, 46);
+  doc.setFontSize(22);
+  doc.setFont(undefined, 'bold');
+  doc.text(c.candidateName, 40, y);
+  
+  // Verdict badge
+  const verdictColor = c.verdict === 'STRONG' ? [22, 101, 52] : c.verdict === 'BORDERLINE' ? [146, 64, 14] : [153, 27, 27];
+  const verdictBg = c.verdict === 'STRONG' ? [240, 253, 244] : c.verdict === 'BORDERLINE' ? [254, 243, 199] : [254, 226, 226];
+  doc.setFillColor(...verdictBg);
+  doc.roundedRect(pageWidth - 180, y - 22, 140, 30, 4, 4, 'F');
+  doc.setTextColor(...verdictColor);
+  doc.setFontSize(13);
+  doc.setFont(undefined, 'bold');
+  doc.text(c.verdict, pageWidth - 110, y - 3, {align: 'center'});
+  y += 12;
+  
+  doc.setTextColor(107, 114, 128);
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'normal');
+  doc.text('Assessment date: ' + new Date(c.timestamp).toLocaleDateString(), 40, y);
+  y += 25;
+  
+  // ===== ASSESSMENT SCORE OVERVIEW =====
+  doc.setFillColor(248, 249, 250);
+  doc.rect(40, y, pageWidth - 80, 60, 'F');
+  doc.setTextColor(204, 0, 0);
+  doc.setFontSize(9);
+  doc.setFont(undefined, 'bold');
+  doc.text('ASSESSMENT OVERVIEW', 50, y + 18);
+  doc.setTextColor(26, 26, 46);
+  doc.setFontSize(20);
+  doc.text(c.total + '/' + c.maxMCScore, 50, y + 45);
+  doc.setFontSize(11);
+  doc.setFont(undefined, 'normal');
+  doc.text(c.pct + '%', 50, y + 58);
+  
+  doc.setFontSize(10);
+  doc.setTextColor(107, 114, 128);
+  doc.text('Time used: ' + c.tm, pageWidth/2, y + 30);
+  doc.text('Pass threshold: 75%', pageWidth/2, y + 45);
+  y += 80;
+  
+  // ===== SECTION BREAKDOWN =====
+  doc.setTextColor(204, 0, 0);
+  doc.setFontSize(10);
+  doc.setFont(undefined, 'bold');
+  doc.text('SECTION BREAKDOWN', 40, y);
+  y += 8;
+  
+  const sectionRows = (c.secScores || []).filter(s => s.label !== 'Behavioral profile').map(s => {
+    const sp = s.max > 0 ? Math.round(s.raw/s.max*100) : 0;
+    return [s.label, s.raw + '/' + s.max, sp + '%'];
+  });
+  
+  doc.autoTable({
+    startY: y + 5,
+    head: [['Section', 'Score', '%']],
+    body: sectionRows,
+    theme: 'plain',
+    headStyles: {fillColor: [26, 26, 46], textColor: [255,255,255], fontSize: 9, fontStyle: 'bold'},
+    bodyStyles: {fontSize: 9, textColor: [55, 65, 81]},
+    alternateRowStyles: {fillColor: [248, 249, 250]},
+    margin: {left: 40, right: 40},
+    columnStyles: {1: {halign: 'center'}, 2: {halign: 'center', fontStyle: 'bold'}}
+  });
+  y = doc.lastAutoTable.finalY + 20;
+  
+  // ===== BEHAVIORAL PROFILE =====
+  if(c.behavioralProfile && c.behavioralProfile.length > 0) {
+    doc.setTextColor(204, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('BEHAVIORAL PROFILE', 40, y);
+    y += 8;
+    
+    const dimNames = {drive:'Drive / Initiative', persistence:'Persistence', social:'Social orientation', process:'Process orientation', stress:'Stress response'};
+    const bpRows = c.behavioralProfile.map(b => [dimNames[b.dimension] || b.dimension, b.lean]);
+    
+    doc.autoTable({
+      startY: y + 5,
+      head: [['Dimension', 'Profile']],
+      body: bpRows,
+      theme: 'plain',
+      headStyles: {fillColor: [26, 26, 46], textColor: [255,255,255], fontSize: 9, fontStyle: 'bold'},
+      bodyStyles: {fontSize: 9, textColor: [55, 65, 81]},
+      alternateRowStyles: {fillColor: [248, 249, 250]},
+      margin: {left: 40, right: 40},
+      columnStyles: {1: {fontStyle: 'bold'}}
+    });
+    y = doc.lastAutoTable.finalY + 20;
+  }
+  
+  // ===== MANAGER WRITTEN SCORES =====
+  if(c.managerScores && Object.keys(c.managerScores).length > 0) {
+    if(y > 600) { doc.addPage(); y = 50; }
+    doc.setTextColor(204, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('MANAGER WRITTEN SCORES', 40, y);
+    y += 8;
+    
+    const msRows = Object.entries(c.managerScores).map(([mgr, data]) => [mgr, data.total + '/20']);
+    
+    doc.autoTable({
+      startY: y + 5,
+      head: [['Manager', 'Written total']],
+      body: msRows,
+      theme: 'plain',
+      headStyles: {fillColor: [26, 26, 46], textColor: [255,255,255], fontSize: 9, fontStyle: 'bold'},
+      bodyStyles: {fontSize: 9, textColor: [55, 65, 81]},
+      alternateRowStyles: {fillColor: [248, 249, 250]},
+      margin: {left: 40, right: 40},
+      columnStyles: {1: {halign: 'center', fontStyle: 'bold'}}
+    });
+    y = doc.lastAutoTable.finalY + 20;
+  }
+  
+  // ===== INTERVIEW RESULTS =====
+  if(c.interviews && c.interviews.length > 0) {
+    if(y > 600) { doc.addPage(); y = 50; }
+    doc.setTextColor(204, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'bold');
+    doc.text('INTERVIEW RESULTS', 40, y);
+    y += 8;
+    
+    const ivRows = c.interviews.map(iv => [
+      iv.manager,
+      iv.scorecardTotal + '/100',
+      iv.roleplayAvg + '/4 (' + iv.roleplayCount + ' done)',
+      iv.finalVerdict
+    ]);
+    
+    doc.autoTable({
+      startY: y + 5,
+      head: [['Manager', 'Scorecard', 'Roleplay avg', 'Verdict']],
+      body: ivRows,
+      theme: 'plain',
+      headStyles: {fillColor: [26, 26, 46], textColor: [255,255,255], fontSize: 9, fontStyle: 'bold'},
+      bodyStyles: {fontSize: 9, textColor: [55, 65, 81]},
+      alternateRowStyles: {fillColor: [248, 249, 250]},
+      margin: {left: 40, right: 40},
+      columnStyles: {1: {halign: 'center'}, 2: {halign: 'center'}, 3: {halign: 'center', fontStyle: 'bold'}}
+    });
+    y = doc.lastAutoTable.finalY + 15;
+    
+    // Manager notes
+    c.interviews.forEach(iv => {
+      if(iv.finalNotes) {
+        if(y > 700) { doc.addPage(); y = 50; }
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(26, 26, 46);
+        doc.text(iv.manager + ' notes:', 40, y);
+        y += 12;
+        doc.setFont(undefined, 'normal');
+        doc.setTextColor(55, 65, 81);
+        const noteLines = doc.splitTextToSize('"' + iv.finalNotes + '"', pageWidth - 80);
+        doc.text(noteLines, 40, y);
+        y += noteLines.length * 11 + 8;
+      }
+    });
+    y += 10;
+  }
+  
+  // ===== FULL DETAIL ONLY =====
+  if(mode === 'full') {
+    // Written answers
+    if(c.openAnswers) {
+      if(y > 500) { doc.addPage(); y = 50; }
+      doc.setTextColor(204, 0, 0);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('CANDIDATE WRITTEN ANSWERS', 40, y);
+      y += 18;
+      
+      const labels = {q3:'Q4 — What money means to you', q8:'Q9 — Selling not the cheapest option', q16:'Q17 — Disagreement with a manager', q20:'Q21 — Why Toyota Marin specifically', q23:'Q24 — Work history last 5 years'};
+      
+      Object.entries(c.openAnswers).forEach(([k, v]) => {
+        if(!v) return;
+        if(y > 700) { doc.addPage(); y = 50; }
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(26, 26, 46);
+        doc.text(labels[k] || k, 40, y);
+        y += 12;
+        doc.setFont(undefined, 'italic');
+        doc.setTextColor(55, 65, 81);
+        const lines = doc.splitTextToSize('"' + v + '"', pageWidth - 80);
+        doc.text(lines, 40, y);
+        y += lines.length * 11 + 12;
+      });
+      y += 5;
+    }
+    
+    // Suggested probes
+    if(c.probes && c.probes.length > 0) {
+      if(y > 600) { doc.addPage(); y = 50; }
+      doc.setTextColor(204, 0, 0);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text('SUGGESTED INTERVIEW PROBES', 40, y);
+      y += 14;
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(55, 65, 81);
+      c.probes.forEach((p, i) => {
+        if(y > 720) { doc.addPage(); y = 50; }
+        const lines = doc.splitTextToSize((i+1) + '. ' + p, pageWidth - 80);
+        doc.text(lines, 40, y);
+        y += lines.length * 11 + 4;
+      });
+    }
+  }
+  
+  // Footer on each page
+  const pageCount = doc.internal.getNumberOfPages();
+  for(let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(156, 163, 175);
+    doc.text('Toyota Marin Hiring System  |  Page ' + i + ' of ' + pageCount, pageWidth/2, doc.internal.pageSize.height - 20, {align: 'center'});
+  }
+  
+  const filename = c.candidateName.replace(/[^a-zA-Z0-9]/g, '_') + '_' + (mode === 'full' ? 'Full' : 'Summary') + '_Report.pdf';
+  doc.save(filename);
 }
 </script>
 </body>
