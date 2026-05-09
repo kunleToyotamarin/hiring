@@ -71,7 +71,7 @@ body{font-family:Arial,sans-serif;background:#f4f5f7;color:#1a1a2e;font-size:15p
   </div>
   <div class="timer-box" id="timer-box">
     <div class="timer-label">Time remaining</div>
-    <div class="timer-num" id="timer-display">17:00</div>
+    <div class="timer-num" id="timer-display">30:00</div>
   </div>
 </div>
 <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
@@ -79,11 +79,11 @@ body{font-family:Arial,sans-serif;background:#f4f5f7;color:#1a1a2e;font-size:15p
   <div id="start-screen" class="screen active">
     <div class="start-card">
       <h2>Welcome to Toyota Marin</h2>
-      <p>Before your interview begins, please complete this short assessment. It takes approximately 17 minutes and must be completed on your own.</p>
+      <p>Before your interview begins, please complete this short assessment. It takes approximately 30 minutes and must be completed on your own.</p>
       <div class="rules">
         <div class="rules-title">Instructions</div>
         <div class="rule-item"><div class="rule-dot"></div><span>Answer every question as honestly as you can — there are no trick questions</span></div>
-        <div class="rule-item"><div class="rule-dot"></div><span>The timer starts when you click Begin — you have 17 minutes</span></div>
+        <div class="rule-item"><div class="rule-dot"></div><span>The timer starts when you click Begin — you have 30 minutes</span></div>
         <div class="rule-item"><div class="rule-dot"></div><span>For multiple choice, select the answer that best reflects what you would actually do</span></div>
         <div class="rule-item"><div class="rule-dot"></div><span>For written questions, brief and honest is better than long and polished</span></div>
         <div class="rule-item"><div class="rule-dot"></div><span>Please set your phone face-down — your interviewer will collect the results when you finish</span></div>
@@ -102,7 +102,7 @@ body{font-family:Arial,sans-serif;background:#f4f5f7;color:#1a1a2e;font-size:15p
     </div>
     <div id="question-area"></div>
     <div class="nav-row">
-      <div class="q-progress" id="q-progress">Question 1 of 24</div>
+      <div class="q-progress" id="q-progress">Question 1 of 35</div>
       <div style="display:flex;gap:10px;">
         <button class="btn-nav" id="btn-back" onclick="goBack()">Back</button>
         <button class="btn-nav btn-next" id="btn-next" onclick="goNext()" disabled>Next</button>
@@ -134,7 +134,7 @@ const MANAGERS = [
 
 const SCORE_PAGE_URL = 'https://kunletoyotamarin.github.io/hiring/ToyotaMarin_Score.html';
 const RESULTS_PAGE_URL = 'https://kunletoyotamarin.github.io/hiring/ToyotaMarin_Results.html';
-const TOTAL_TIME = 17 * 60;
+const TOTAL_TIME = 30 * 60;
 let timeLeft = TOTAL_TIME;
 let timerInterval = null;
 let currentQ = 0;
@@ -150,7 +150,9 @@ const sections = [
   { name:'Coachability',        icon:'+', desc:'Your approach to feedback and growth',                    color:'#d97706' },
   { name:'One-price alignment', icon:'=', desc:'Your fit with our sales model',                           color:'#cc0000' },
   { name:'A2Z finance process', icon:'F', desc:'How you handle the finance role — you are the finance manager on every deal', color:'#be185d' },
-  { name:'Pressure & history',  icon:'!', desc:'How you perform under pressure and your work background',  color:'#0284c7' }
+  { name:'Pressure & history',  icon:'!', desc:'How you perform under pressure and your work background',  color:'#0284c7' },
+  { name:'Teamwork',            icon:'T', desc:'How you handle shared deals and team dynamics',             color:'#0d9488' },
+  { name:'Behavioral profile',  icon:'B', desc:'Your natural approach to work — answer with your first instinct, no right or wrong', color:'#9333ea' }
 ];
 
 const questions = [
@@ -250,7 +252,72 @@ const questions = [
     scored:[2,1,0,4,0]},
   {id:23, section:6, type:'open', points:0,
     text:'List every job you have held in the last 5 years — include the role, how long you were there, and in one sentence why you left or are looking to leave.',
-    placeholder:'Example: "Sales rep at X dealership, 2 years, left because management changed and the culture became difficult." Be specific and honest.', minWords:25}
+    placeholder:'Example: "Sales rep at X dealership, 2 years, left because management changed and the culture became difficult." Be specific and honest.', minWords:25},
+
+  {id:24, section:7, type:'mc', points:4,
+    text:'You have been working with a customer for a week. They come in on Saturday and you are with another customer. Your teammate jumps in, spends 90 minutes with them, but they leave saying "let me think about it." Sunday they come back — your teammate is off, you are available, and the customer wants to close with you. What do you do?',
+    options:['Take the deal solo — I started it, I closed it, that is the business','Split it half-and-half with my teammate — they did real work on it','Ask my manager what to do','Tell the customer to come back when my teammate is in','Take the full deal but buy my teammate lunch later'],
+    scored:[0,4,2,0,1]},
+
+  {id:25, section:8, type:'mc', points:4,
+    text:'It is the start of a new month and your team has just been given individual sales targets. What is your typical first move?',
+    options:['Wait for my manager to tell me what to focus on','Review last month\'s shortfalls and immediately plan the first week','Set personal stretch goals above the target before doing anything else','Talk to top performers to see what they are planning','Catch up on calls and emails first before planning'],
+    scored:[0,3,4,2,1]},
+
+  {id:26, section:8, type:'mc', points:4,
+    text:'A new lead comes in 30 minutes before close of business. Your shift technically ends in 15 minutes. What do you do?',
+    options:['Pass it to the next morning shift — it can wait','Send a quick text and follow up tomorrow','Call them now — leads go cold fast','Stay late and work the lead until it is closed or scheduled','Mark it for tomorrow and leave on time'],
+    scored:[0,1,3,4,0]},
+
+  {id:27, section:8, type:'mc', points:4,
+    text:'You have been working a deal for 3 weeks. The customer keeps stalling and pushing the close out. Most recent excuse: "Let me check with my brother first." How do you respond?',
+    options:['Move on — three weeks is too long, this deal is not closing','Continue to follow up weekly until they decide','Push for a final yes or no this week so you can refocus','Find out specifically what the brother needs to see and address it directly','Drop in to see them in person to break the pattern'],
+    scored:[1,2,3,4,2]},
+
+  {id:28, section:8, type:'mc', points:4,
+    text:'You miss your monthly target by 3 units. Your manager is busy this week and has not addressed it. What is your move?',
+    options:['Wait for my manager to bring it up','Take an extra day off because I am drained','Schedule a meeting with my manager to discuss what to fix','Build my own plan for next month and execute without prompting','Ask top performers what they are doing differently'],
+    scored:[0,0,3,4,3]},
+
+  {id:29, section:8, type:'mc', points:4,
+    text:'You are working a slow Tuesday afternoon — only 1 customer all day. What do you do with the remaining 4 hours?',
+    options:['Catch up on personal stuff since it is quiet','Sit at my desk and wait for walk-ins','Reorganize my desk and CRM','Make follow-up calls to existing leads and past customers','Work the phones for new appointments'],
+    scored:[0,0,1,3,4]},
+
+  {id:30, section:8, type:'mc', points:4,
+    text:'A customer just told you "no" after you spent 2 hours with them. They walk out. How does this affect the rest of your shift?',
+    options:['I need a break — that one stung','I move on immediately to the next customer','I take 5 minutes to reset, then re-engage','I replay the deal mentally to see what went wrong','I feel rejected for the rest of the day'],
+    scored:[1,3,4,3,0]},
+
+  {id:31, section:8, type:'mc', points:4,
+    text:'You are most comfortable when you are:',
+    options:['Working solo with minimal interruption','Around 1 or 2 people I know well','In a busy environment with lots of activity around me','Constantly interacting with new people','At the center of the floor energy and conversations'],
+    scored:[0,1,3,4,4]},
+
+  {id:32, section:8, type:'mc', points:4,
+    text:'A new customer walks in. You have never met them. What is your gut reaction?',
+    options:['I prefer to let them browse and approach when ready','I greet them politely and gauge their interest','I introduce myself warmly and start a conversation','I am genuinely excited to meet them and dive in','I find new customers slightly draining'],
+    scored:[1,2,3,4,0]},
+
+  {id:33, section:8, type:'mc', points:4,
+    text:'Your dealership rolls out a new CRM workflow. Every rep must log every interaction in a specific format. What is your default response?',
+    options:['Follow it exactly as instructed from day one','Adopt it for important deals but skip small interactions','Modify the workflow to match what works for me personally','Wait to see if it actually gets enforced before changing my habits','Push back if I think a different approach would work better'],
+    scored:[4,2,1,0,1]},
+
+  {id:34, section:8, type:'mc', points:4,
+    text:'Your manager hands you a new daily routine: 25 calls, 10 videos, full CRM updates by end of day. After 2 weeks you realize the calls are not working as well as personal visits. What do you do?',
+    options:['Ditch the calls and do what I think works','Follow the routine while raising the concern with my manager directly','Cut the call count in half to make room for visits','Follow the routine exactly and see if it improves with more time','Privately do my own thing while appearing to follow the routine'],
+    scored:[0,4,1,3,0]},
+
+  {id:35, section:8, type:'mc', points:4,
+    text:'A customer is yelling at you over a price disagreement. They are getting more aggressive. How do you typically respond in the moment?',
+    options:['I match their energy and push back firmly','I get quiet and let them vent until they calm down','I stay calm, lower my own volume, and refocus the conversation','I become apologetic to defuse the situation','I get my manager involved immediately'],
+    scored:[1,2,4,1,2]},
+
+  {id:36, section:8, type:'mc', points:4,
+    text:'You have just lost 3 deals in a row this week. None of them were your fault — credit issues, timing, etc. How does it affect you?',
+    options:['It really gets in my head and I struggle to bounce back','I feel discouraged but push through','I shake it off — the next customer is a fresh start','I review what I could have done differently then move on','I get more aggressive on the next opportunity'],
+    scored:[0,2,3,4,3]}
 ];
 
 const maxMCScore = questions.filter(q=>q.type==='mc').reduce((a,q)=>a+q.points,0);

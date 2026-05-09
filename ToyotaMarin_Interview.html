@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toyota Marin — Manager Interview Tool</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;background:#f4f5f7;color:#1a1a2e;font-size:14px;}
+.header{background:#1a1a2e;color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.header h1{font-size:16px;font-weight:700;}
+.header p{font-size:12px;color:#9ca3af;margin-top:2px;}
+.btn-logout{background:transparent;color:#9ca3af;border:1px solid #374151;padding:6px 16px;border-radius:6px;font-size:12px;cursor:pointer;}
+.main{max-width:900px;margin:24px auto;padding:0 20px 60px;}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:22px 24px;margin-bottom:16px;}
+.card-title{font-size:15px;font-weight:700;color:#1a1a2e;margin-bottom:6px;}
+.card-sub{font-size:12px;color:#6b7280;margin-bottom:14px;line-height:1.6;}
+.section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#cc0000;margin-bottom:10px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:12px;color:#374151;font-weight:600;margin-bottom:5px;}
+select,input[type=text]{width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;color:#1a1a2e;background:#fff;}
+select:focus,input:focus{outline:none;border-color:#cc0000;}
+.trait-block{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid #f0f0f0;}
+.trait-block:last-child{border-bottom:none;}
+.trait-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.trait-name{font-size:14px;font-weight:700;color:#1a1a2e;}
+.trait-score-display{font-size:22px;font-weight:700;}
+.score-track{height:8px;background:#f0f0f0;border-radius:4px;overflow:hidden;margin-bottom:6px;}
+.score-fill{height:100%;border-radius:4px;}
+input[type=range]{width:100%;accent-color:#cc0000;}
+.rubric-text{font-size:11px;color:#6b7280;line-height:1.7;background:#fafafa;border-radius:6px;padding:9px 12px;margin-top:6px;}
+.total-row{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-radius:10px;margin-top:8px;border:2px solid #e5e7eb;}
+.total-num{font-size:24px;font-weight:700;}
+.verdict-badge{font-size:14px;font-weight:700;padding:8px 18px;border-radius:8px;}
+.rp-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.rp-tab{padding:8px 14px;font-size:11px;font-weight:600;border:1px solid #e5e7eb;border-radius:6px;background:#fff;color:#6b7280;cursor:pointer;}
+.rp-tab.active{background:#cc0000;color:#fff;border-color:#cc0000;}
+.rp-tab.scored{background:#f0fdf4;color:#166534;border-color:#86efac;}
+.rp-pane{display:none;}
+.rp-pane.active{display:block;}
+.scenario-text{font-style:italic;font-size:13px;color:#374151;line-height:1.7;background:#fef9f0;border:1px solid #fde68a;border-radius:8px;padding:14px 16px;margin-bottom:14px;}
+.criteria-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+@media(max-width:600px){.criteria-grid{grid-template-columns:1fr;}}
+.criteria-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;}
+.criteria-pass{color:#166534;}
+.criteria-fail{color:#991b1b;}
+.criteria-item{font-size:12px;color:#374151;margin-bottom:6px;line-height:1.5;display:flex;gap:8px;align-items:flex-start;}
+.check-icon{color:#16a34a;font-weight:700;flex-shrink:0;}
+.cross-icon{color:#cc0000;font-weight:700;flex-shrink:0;}
+.rp-score-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.rp-score-btn{padding:8px 16px;font-size:13px;font-weight:600;border:1.5px solid #e5e7eb;border-radius:8px;background:#fff;color:#374151;cursor:pointer;flex:1;min-width:80px;text-align:center;}
+.rp-score-btn:hover{border-color:#cc0000;background:#fef2f2;}
+.rp-score-btn.selected{background:#cc0000;border-color:#cc0000;color:#fff;}
+.rp-notes{width:100%;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Arial,sans-serif;font-size:12px;color:#374151;resize:vertical;min-height:60px;line-height:1.5;margin-top:10px;}
+.btn-submit{background:#cc0000;color:#fff;border:none;padding:13px 36px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:10px;}
+.btn-submit:hover{background:#aa0000;}
+.btn-submit:disabled{background:#9ca3af;cursor:not-allowed;}
+.login-wrap{max-width:400px;margin:80px auto;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:40px;text-align:center;}
+.login-wrap h2{font-size:20px;font-weight:700;margin-bottom:8px;}
+.login-wrap p{font-size:13px;color:#6b7280;margin-bottom:24px;}
+.pw-input{width:100%;padding:12px 16px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:15px;text-align:center;letter-spacing:0.1em;}
+.btn-login{background:#cc0000;color:#fff;border:none;padding:13px 36px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:12px;}
+.pw-error{color:#cc0000;font-size:12px;margin-top:8px;display:none;}
+.success-box{background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:28px;text-align:center;display:none;}
+.success-box h2{font-size:18px;font-weight:700;color:#166534;margin-bottom:8px;}
+.success-box p{font-size:13px;color:#166534;line-height:1.7;}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0f0;font-size:13px;}
+.summary-row:last-child{border-bottom:none;}
+.notes-area{width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:8px;font-family:Arial,sans-serif;font-size:13px;color:#1a1a2e;resize:vertical;min-height:80px;line-height:1.6;margin-top:8px;}
+</style>
+</head>
+<body>
+
+<div class="header" id="main-header" style="display:none;">
+  <div>
+    <h1>Toyota Marin — Manager Interview Tool</h1>
+    <p id="header-sub">Live interview scorecard + roleplay</p>
+  </div>
+  <button class="btn-logout" onclick="logout()">Log out</button>
+</div>
+
+<div class="main" id="login-section">
+  <div class="login-wrap">
+    <h2>Manager Interview Tool</h2>
+    <p>Enter manager password to access interview scoring</p>
+    <input class="pw-input" type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')tryLogin()">
+    <button class="btn-login" onclick="tryLogin()">Access tool</button>
+    <div class="pw-error" id="pw-error">Incorrect password</div>
+  </div>
+</div>
+
+<div class="main" id="dashboard" style="display:none;">
+
+  <div class="card">
+    <div class="card-title">Interview Setup</div>
+    <div class="field">
+      <label>Manager conducting interview</label>
+      <select id="manager-select">
+        <option value="">Select manager...</option>
+        <option value="Kunle">Kunle</option>
+        <option value="Joel">Joel</option>
+        <option value="Brandon">Brandon</option>
+        <option value="Omar">Omar</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Candidate being interviewed</label>
+      <select id="candidate-select">
+        <option value="">Loading candidates...</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">5-trait scorecard</div>
+    <div class="card-title">Behavioral assessment during conversation</div>
+    <div class="card-sub">Score each trait 1–20 based on what you observe during the interview. Use the rubric below each trait. Total of 80+ is required to advance.</div>
+    <div id="traits-container"></div>
+    <div class="total-row" id="total-row">
+      <div>
+        <div style="font-size:11px;color:#6b7280;">Total scorecard</div>
+        <div class="total-num" id="total-num">50 / 100</div>
+      </div>
+      <div id="verdict-badge" class="verdict-badge"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-label">Roleplay scenarios</div>
+    <div class="card-title">Pick at least 3 scenarios to run with the candidate</div>
+    <div class="card-sub">Click a scenario tab. Read the customer line aloud as written. Score the candidate based on the pass/fail criteria. Tabs turn green once scored.</div>
+    <div class="rp-tabs" id="rp-tabs"></div>
+    <div id="rp-content"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Final hire decision</div>
+    <div class="card-sub">Your overall recommendation based on the assessment, scorecard, and roleplay performance.</div>
+    <div class="field">
+      <label>Verdict</label>
+      <select id="final-verdict">
+        <option value="">Select your decision...</option>
+        <option value="HIRE">HIRE — Strong candidate, advance to offer</option>
+        <option value="MAYBE">MAYBE — Mixed signals, second interview needed</option>
+        <option value="PASS">PASS — Not the right fit</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Final notes</label>
+      <textarea class="notes-area" id="final-notes" placeholder="Standout moments, red flags, gut feel, anything not captured in the scores..."></textarea>
+    </div>
+    <button class="btn-submit" id="btn-submit" onclick="submitInterview()" disabled>Submit interview results</button>
+  </div>
+
+  <div class="success-box" id="success-box">
+    <h2>Interview submitted</h2>
+    <p>Your interview results have been recorded.<br>The candidate's combined data is now available on the dashboard.</p>
+    <br>
+    <a href="ToyotaMarin_Results.html" style="color:#cc0000;font-weight:700;font-size:14px;">Open hiring dashboard</a>
+  </div>
+
+</div>
+
+<script>
+const PASSWORD = 'Toyotamarin';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxFKiScDtl4GBZzIUnTPmSyO1onnmEcveVrXpCdG1pEuDyWvRT-XFLM2eL8OEKlGlpcGw/exec';
+
+const traits = [
+  { key:'conf',    name:'Confidence',       rubric:'17–20: Holds eye contact, doesn\'t flinch at pushback, self-worth tied to performance not ego. 13–16: Generally confident but softens under direct challenge. 9–12: Comfortable casually, hesitates under pressure. 1–8: Apologetic, avoidant, or overcompensating with bravado.' },
+  { key:'money',   name:'Money drive',      rubric:'17–20: Knows exact income history, names a specific income goal, talks money with energy. 13–16: Money-motivated but vague on numbers. 9–12: Wants to earn but cannot back it up with specifics. 1–8: Uncomfortable discussing compensation.' },
+  { key:'coach',   name:'Coachability',     rubric:'17–20: Incorporates feedback in the moment, asks follow-up questions, examples of changing behavior. 13–16: Receptive but passive — accepts feedback without acting on it. 9–12: Listens but does not adjust. 1–8: Defensive, makes excuses, deflects.' },
+  { key:'close',   name:'Closing instinct', rubric:'17–20: Naturally advances toward a decision, reads buying signals, does not back off at resistance. 13–16: Some closing skill but inconsistent. 9–12: Waits for customer to decide rather than guiding. 1–8: Avoids asking for the sale entirely.' },
+  { key:'backend', name:'Backend instinct', rubric:'17–20: Understands protection products, articulates value without pressure, sees backend as serving the customer. 13–16: Knows what backend is, somewhat comfortable. 9–12: Treats backend as optional or awkward. 1–8: Avoids backend entirely.' }
+];
+
+const scenarios = [
+  {
+    id:1, title:'Competitor priced lower',
+    customer:'I found this exact car — same trim, same color — at a dealer in Sacramento for $800 less. Why would I buy from you at a higher price?',
+    pass:['Stays calm — no rush to concede or apologize','Asks a clarifying question before responding','Builds value around experience, service, proximity','Confident, not defensive'],
+    fail:['Immediately says "let me see what I can do"','Cannot articulate any differentiation','Tries to match the price','Gets flustered or goes silent']
+  },
+  {
+    id:2, title:'Demands a discount on one-price',
+    customer:'I always negotiate when I buy a car. What\'s the lowest you can really go on this?',
+    pass:['Confidently explains one-price philosophy without apology','Reframes value (no haggling = no overpaying)','Stays warm — doesn\'t get preachy','Doesn\'t break or hint at flexibility'],
+    fail:['Says "let me ask my manager"','Hints there might be wiggle room','Becomes preachy or condescending','Caves and offers a small concession']
+  },
+  {
+    id:3, title:'Trade-in dispute',
+    customer:'My trade is worth way more than what you\'re offering. I checked Kelley Blue Book — it says $19,000 and you offered me $15,000.',
+    pass:['Doesn\'t attack KBB — explains how dealer trade values work','Walks through condition factors honestly','Offers to show comparable auction data','Maintains the offer without crumbling'],
+    fail:['Dismisses KBB outright','Caves and bumps the offer','Gets defensive about appraisal','Promises to "see what they can do"']
+  },
+  {
+    id:4, title:'Let me think about it overnight',
+    customer:'I really like this car but I want to think about it overnight and come back tomorrow. Can you hold it for me?',
+    pass:['Doesn\'t cave — asks what specifically needs thinking through','Creates real urgency without fake pressure','Offers to solve the actual underlying concern','Gets a next-step commitment'],
+    fail:['Immediately agrees to hold it','Uses fake scarcity ("someone else is looking right now")','Doesn\'t probe for the real reason','Lets them walk without commitment']
+  },
+  {
+    id:5, title:'Spouse not present',
+    customer:'I love this car, but I really need to bring my wife/husband in before I sign anything.',
+    pass:['Respects the spouse decision but explores readiness','Offers to call the spouse on speaker','Identifies if it\'s truly a spouse issue or a stall','Sets a firm, soon next-step'],
+    fail:['"Sure, just come back when you can"','Doesn\'t probe whether spouse is the real concern','Tries to bypass the spouse entirely','Lets them walk with no plan']
+  },
+  {
+    id:6, title:'Just looking at the door',
+    customer:'I\'m just looking, I don\'t want to be bothered.',
+    pass:['Respects the request but stays warm and present','Asks one open-ended question that earns a conversation','Gives space without disappearing','Comes back at the right time'],
+    fail:['Hovers or pressures','Walks away entirely and never returns','Launches into a sales pitch','Robotic "let me know if you need anything"']
+  },
+  {
+    id:7, title:'Wants to skip backend menu',
+    customer:'The car\'s perfect. I just want to sign and get out. Can we skip all the extras and just do the paperwork?',
+    pass:['Doesn\'t skip — finds a natural way through','Frames backend as value, not upsell','Reads the customer\'s energy and paces accordingly','Keeps it brief but complete'],
+    fail:['Immediately agrees to skip backend','Hard sells to a clearly rushed customer','Treats backend as obligation, not offer','Zero attempt at all']
+  },
+  {
+    id:8, title:'Worried about credit approval',
+    customer:'My credit isn\'t great. I had some issues a few years ago. Will I even get approved?',
+    pass:['Reassuring without overpromising','Asks the right questions to assess realistically','Explains the process clearly','Maintains the customer\'s dignity'],
+    fail:['Promises approval without knowing','Makes them feel judged','Doesn\'t ask the right qualifying questions','Either dismisses concerns or amplifies them']
+  },
+  {
+    id:9, title:'First-time buyer no credit',
+    customer:'This is my first car. I don\'t really have any credit history yet. Is that going to be a problem?',
+    pass:['Treats them with respect, not condescension','Walks through first-time buyer programs','Sets realistic expectations on rates','Builds confidence in the process'],
+    fail:['Talks down to them','Glosses over the rate impact','Pushes them into too much car','Treats it as an obstacle']
+  },
+  {
+    id:10, title:'Aggressive/angry customer',
+    customer:'This is ridiculous. I\'ve been here two hours. Are you even trying to make this happen or are you just wasting my time?',
+    pass:['Doesn\'t get defensive or match their energy','Acknowledges the frustration genuinely','Resets the situation calmly','Refocuses on solving their problem'],
+    fail:['Matches their aggression','Becomes overly apologetic and weak','Blames other departments','Goes silent or freezes']
+  },
+  {
+    id:11, title:'Friend keeps interrupting',
+    customer:'(Friend chimes in) Don\'t pay that — they always come down. Just walk out, they\'ll call you.',
+    pass:['Acknowledges the friend respectfully','Keeps the conversation focused on the actual buyer','Doesn\'t argue with the friend','Gently re-engages the decision-maker'],
+    fail:['Argues with the friend directly','Ignores the friend completely (creates tension)','Loses the buyer to the friend\'s influence','Tries to "win over" the friend instead of the buyer']
+  },
+  {
+    id:12, title:'Threatens to walk out',
+    customer:'You know what, this isn\'t working. I\'m leaving. (stands up to leave)',
+    pass:['Doesn\'t panic or chase','Asks one calm question to reset','Identifies the real objection','Either saves the deal or earns a callback'],
+    fail:['Panics and offers concessions','Lets them walk silently','Becomes pushy and creates more friction','Apologizes excessively']
+  }
+];
+
+const scores = {conf:10,money:10,coach:10,close:10,backend:10};
+const rpScores = {};
+const rpNotes = {};
+let candidates = [];
+let currentRP = scenarios[0].id;
+
+function tryLogin(){
+  const pw = document.getElementById('pw-input').value;
+  if(pw === PASSWORD){
+    document.getElementById('login-section').style.display='none';
+    document.getElementById('main-header').style.display='flex';
+    document.getElementById('dashboard').style.display='block';
+    init();
+  } else {
+    document.getElementById('pw-error').style.display='block';
+  }
+}
+
+function logout(){
+  document.getElementById('login-section').style.display='block';
+  document.getElementById('main-header').style.display='none';
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('pw-input').value='';
+}
+
+function getColor(s){return s>=17?'#16a34a':s>=13?'#2563eb':s>=9?'#d97706':'#cc0000';}
+
+function init(){
+  buildTraits();
+  buildRoleplayTabs();
+  showRoleplay(scenarios[0].id);
+  loadCandidates();
+  updateSubmitButton();
+}
+
+function buildTraits(){
+  document.getElementById('traits-container').innerHTML = traits.map(t=>`
+    <div class="trait-block">
+      <div class="trait-row">
+        <div class="trait-name">${t.name}</div>
+        <div class="trait-score-display" id="sd-${t.key}" style="color:${getColor(scores[t.key])}">${scores[t.key]}<span style="font-size:13px;color:#9ca3af;font-weight:400"> / 20</span></div>
+      </div>
+      <div class="score-track"><div class="score-fill" id="sf-${t.key}" style="width:${scores[t.key]/20*100}%;background:${getColor(scores[t.key])};"></div></div>
+      <input type="range" min="1" max="20" value="${scores[t.key]}" step="1" oninput="updateTrait('${t.key}',this.value)">
+      <div class="rubric-text">${t.rubric}</div>
+    </div>
+  `).join('');
+  updateTotal();
+}
+
+function updateTrait(key,val){
+  scores[key]=parseInt(val);
+  const c=getColor(scores[key]);
+  document.getElementById('sd-'+key).innerHTML=scores[key]+'<span style="font-size:13px;color:#9ca3af;font-weight:400"> / 20</span>';
+  document.getElementById('sd-'+key).style.color=c;
+  document.getElementById('sf-'+key).style.width=(scores[key]/20*100)+'%';
+  document.getElementById('sf-'+key).style.background=c;
+  updateTotal();
+}
+
+function updateTotal(){
+  const total=Object.values(scores).reduce((a,b)=>a+b,0);
+  document.getElementById('total-num').textContent=total+' / 100';
+  const row=document.getElementById('total-row');
+  const badge=document.getElementById('verdict-badge');
+  if(total>=80){row.style.background='#f0fdf4';row.style.borderColor='#86efac';badge.textContent='HIRE-READY';badge.style.background='#16a34a';badge.style.color='#fff';}
+  else if(total>=70){row.style.background='#fffbeb';row.style.borderColor='#fde047';badge.textContent='BORDERLINE';badge.style.background='#d97706';badge.style.color='#fff';}
+  else{row.style.background='#fef2f2';row.style.borderColor='#fca5a5';badge.textContent='BELOW BAR';badge.style.background='#cc0000';badge.style.color='#fff';}
+}
+
+function buildRoleplayTabs(){
+  document.getElementById('rp-tabs').innerHTML = scenarios.map(s=>
+    `<button class="rp-tab" id="rptab-${s.id}" onclick="showRoleplay(${s.id})">${s.id}. ${s.title}</button>`
+  ).join('');
+  document.getElementById('rptab-'+scenarios[0].id).classList.add('active');
+}
+
+function showRoleplay(id){
+  currentRP = id;
+  scenarios.forEach(s=>{
+    const tab = document.getElementById('rptab-'+s.id);
+    if(tab){
+      tab.classList.remove('active');
+      if(rpScores[s.id]!==undefined) tab.classList.add('scored');
+      else tab.classList.remove('scored');
+    }
+  });
+  document.getElementById('rptab-'+id).classList.add('active');
+  const s = scenarios.find(x=>x.id===id);
+  const currentScore = rpScores[id];
+  const currentNote = rpNotes[id] || '';
+  document.getElementById('rp-content').innerHTML = `
+    <div class="scenario-text">"${s.customer}"</div>
+    <div class="criteria-grid">
+      <div>
+        <div class="criteria-title criteria-pass">PASS — Watch for these</div>
+        ${s.pass.map(p=>`<div class="criteria-item"><span class="check-icon">✓</span><span>${p}</span></div>`).join('')}
+      </div>
+      <div>
+        <div class="criteria-title criteria-fail">FAIL — Watch for these</div>
+        ${s.fail.map(f=>`<div class="criteria-item"><span class="cross-icon">✗</span><span>${f}</span></div>`).join('')}
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#6b7280;margin-top:14px;margin-bottom:6px;">Score this scenario</div>
+    <div class="rp-score-buttons">
+      <button class="rp-score-btn ${currentScore===0?'selected':''}" onclick="setRPScore(${id},0)">Failed</button>
+      <button class="rp-score-btn ${currentScore===1?'selected':''}" onclick="setRPScore(${id},1)">Below avg</button>
+      <button class="rp-score-btn ${currentScore===2?'selected':''}" onclick="setRPScore(${id},2)">Average</button>
+      <button class="rp-score-btn ${currentScore===3?'selected':''}" onclick="setRPScore(${id},3)">Strong</button>
+      <button class="rp-score-btn ${currentScore===4?'selected':''}" onclick="setRPScore(${id},4)">Elite</button>
+    </div>
+    <textarea class="rp-notes" placeholder="Notes — what they actually said, how they handled it..." oninput="setRPNote(${id},this.value)">${currentNote}</textarea>
+  `;
+}
+
+function setRPScore(id,score){
+  rpScores[id]=score;
+  showRoleplay(id);
+  updateSubmitButton();
+}
+
+function setRPNote(id,text){
+  rpNotes[id]=text;
+}
+
+async function loadCandidates(){
+  try{
+    const res = await fetch(GOOGLE_SCRIPT_URL+'?action=getAll');
+    const data = await res.json();
+    candidates = Array.isArray(data) ? data : [];
+    const sel = document.getElementById('candidate-select');
+    if(candidates.length === 0){
+      sel.innerHTML = '<option value="">No candidates found — they need to complete the assessment first</option>';
+    } else {
+      sel.innerHTML = '<option value="">Select candidate...</option>' +
+        candidates.map(c=>`<option value="${c.candidateId}">${c.candidateName} — ${c.verdict} (${c.pct}%)</option>`).join('');
+    }
+  }catch(e){
+    document.getElementById('candidate-select').innerHTML = '<option value="">Error loading candidates</option>';
+  }
+}
+
+document.addEventListener('change', e=>{
+  if(e.target.id === 'manager-select' || e.target.id === 'candidate-select' || e.target.id === 'final-verdict'){
+    updateSubmitButton();
+  }
+});
+
+document.addEventListener('input', e=>{
+  if(e.target.id === 'final-notes'){
+    updateSubmitButton();
+  }
+});
+
+function updateSubmitButton(){
+  const mgr = document.getElementById('manager-select')?.value;
+  const cand = document.getElementById('candidate-select')?.value;
+  const verdict = document.getElementById('final-verdict')?.value;
+  const rpCount = Object.keys(rpScores).length;
+  const ready = mgr && cand && verdict && rpCount >= 3;
+  const btn = document.getElementById('btn-submit');
+  if(btn) btn.disabled = !ready;
+  if(btn){
+    if(rpCount < 3) btn.textContent = `Score at least 3 roleplays (${rpCount}/3 done)`;
+    else if(!ready) btn.textContent = 'Complete all required fields';
+    else btn.textContent = 'Submit interview results';
+  }
+}
+
+async function submitInterview(){
+  const btn = document.getElementById('btn-submit');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+  const candidateId = document.getElementById('candidate-select').value;
+  const candidate = candidates.find(c=>c.candidateId === candidateId);
+  const payload = {
+    type: 'manager_interview',
+    manager: document.getElementById('manager-select').value,
+    candidateId: candidateId,
+    candidateName: candidate ? candidate.candidateName : '',
+    timestamp: new Date().toISOString(),
+    scorecardScores: scores,
+    scorecardTotal: Object.values(scores).reduce((a,b)=>a+b,0),
+    roleplayScores: rpScores,
+    roleplayNotes: rpNotes,
+    roleplayCount: Object.keys(rpScores).length,
+    roleplayAverage: Object.values(rpScores).reduce((a,b)=>a+b,0) / Object.keys(rpScores).length,
+    finalVerdict: document.getElementById('final-verdict').value,
+    finalNotes: document.getElementById('final-notes').value
+  };
+  try {
+    await fetch(GOOGLE_SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    document.getElementById('dashboard').style.display='none';
+    document.getElementById('success-box').style.display='block';
+    document.querySelector('.main:not(#login-section)').appendChild(document.getElementById('success-box'));
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Submit failed — try again';
+  }
+}
+</script>
+</body>
+</html>
